@@ -12,7 +12,7 @@ This sample walks you through the steps typically followed for ray tracing a sce
 
 Ray-tracing apps spend a significant amount of time computing ray-triangle intersections, so the efficiency of the intersection algorithm impacts rendering performance. Metal Performance Shaders solves this intersection problem with a high-performance intersector. 
 
-The Metal Performance Shaders `MPSRayIntersector` class accelerates ray-triangle intersection tests on the GPU. It accepts rays through a Metal buffer and returns either the closest intersection (for primary rays) or any intersection (for shadow rays) along each ray through a Metal buffer. 
+The Metal Performance Shaders [MPSRayIntersector](https://developer.apple.com/documentation/metalperformanceshaders/mpsrayintersector) class accelerates ray-triangle intersection tests on the GPU. It accepts rays through a Metal buffer and returns either the closest intersection (for primary rays) or any intersection (for shadow rays) along each ray through a Metal buffer. 
 
 Metal Performance Shaders builds a data structure called an _acceleration structure_ that optimizes computing intersections.
 
@@ -70,9 +70,9 @@ ray.color = float3(1.0f, 1.0f, 1.0f);
 
 **Intersect Rays with the Scene**
 
-The intersector’s `encodeIntersectionToCommandBuffer` method computes intersections and encodes its results to a Metal command buffer. 
+The intersector’s [encodeIntersection](https://developer.apple.com/documentation/metalperformanceshaders/mpsrayintersector/2998434-encodeintersection) method computes intersections and encodes its results to a Metal command buffer. 
 
-For primary rays, set the intersection type so that the intersector returns the intersections that are closest to the camera (`MPSIntersectionTypeNearest`). Then pass the ray buffer containing the rays generated in the previous step, an intersection buffer to receive the intersection results, the ray count (in this case, the number of pixels), and the acceleration structure:
+For primary rays, set the intersection type so that the intersector returns the intersections that are closest to the camera ([MPSIntersectionTypeNearest](https://developer.apple.com/documentation/metalperformanceshaders/mpsintersectiontype/mpsintersectiontypenearest?language=objc)). Then pass the ray buffer containing the rays generated in the previous step, an intersection buffer to receive the intersection results, the ray count (in this case, the number of pixels), and the acceleration structure:
 
 ``` objective-c
 [_intersector encodeIntersectionToCommandBuffer:commandBuffer               // Command buffer to encode into
@@ -129,7 +129,7 @@ Shadow rays differ from primary rays in these ways:
 
 You can reuse the intersector and acceleration structure you used for primary rays to compute shadow ray intersections, but you'll need to configure it to use a ray data type that supports shadow rays, based on the differences listed above. You can add your own properties to the ray structure and specify the intersector's ray stride to make the intersector skip over the additional data when reading from the ray buffer. 
 
-Because shadows require neither a triangle index nor coordinates, set the intersector's intersection data type to `MPSIntersectionDataTypeDistance`:
+Because shadows require neither a triangle index nor coordinates, set the intersector's intersection data type to [MPSIntersectionDataType.distance](https://developer.apple.com/documentation/metalperformanceshaders/mpsintersectiondatatype/distance):
 
 ``` objective-c
 _intersector.intersectionDataType = MPSIntersectionDataTypeDistance;
@@ -137,7 +137,7 @@ _intersector.intersectionDataType = MPSIntersectionDataTypeDistance;
 
 **Compute the Shadow Ray Intersections**
 
-Unlike with primary ray intersections, where you need to know the nearest surface to the camera that intersects the ray, it doesn't matter which surface intersects a shadow ray. If triangles exist between the primary intersection and the light source, the primary intersection is shadowed. Therefore, when computing shadow ray intersections, set the intersector type to `MPSIntersectionTypeAny`:
+Unlike with primary ray intersections, where you need to know the nearest surface to the camera that intersects the ray, it doesn't matter which surface intersects a shadow ray. If triangles exist between the primary intersection and the light source, the primary intersection is shadowed. Therefore, when computing shadow ray intersections, set the intersector type to [MPSIntersectionTypeAny](https://developer.apple.com/documentation/metalperformanceshaders/mpsintersectiontype/mpsintersectiontypeany?language=objc):
 
 ``` objective-c
 [_intersector encodeIntersectionToCommandBuffer:commandBuffer
