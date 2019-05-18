@@ -159,7 +159,8 @@ kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
                          constant Uniforms & uniforms,
                          device Ray *shadowRays,
                          device float *intersections,
-                         texture2d<float, access::read_write> dstTex)
+                         texture2d<float, access::read> srcTex,
+                         texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         unsigned int rayIdx = tid.y * uniforms.width + tid.x;
@@ -170,17 +171,16 @@ kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
         // you'll save memory bandwidth.
         float intersectionDistance = intersections[rayIdx];
         
+        float3 color = srcTex.read(tid).xyz;
+        
         // If the shadow ray wasn't disabled (max distance >= 0) and it didn't hit anything
         // on the way to the light source, add the color passed along with the shadow ray
         // to the output image.
-        if (shadowRay.maxDistance >= 0.0f && intersectionDistance < 0.0f) {
-            float3 color = shadowRay.color;
-            
-            color += dstTex.read(tid).xyz;
-            
-            // Write result to render target
-            dstTex.write(float4(color, 1.0f), tid);
-        }
+        if (shadowRay.maxDistance >= 0.0f && intersectionDistance < 0.0f)
+            color += shadowRay.color;
+        
+        // Write result to render target
+        dstTex.write(float4(color, 1.0f), tid);
     }
 }
 ```

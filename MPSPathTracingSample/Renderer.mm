@@ -38,7 +38,6 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLBuffer> _shadowRayBuffer;
     id <MTLBuffer> _intersectionBuffer;
     id <MTLBuffer> _uniformBuffer;
-    id <MTLBuffer> _randomBuffer;
     id <MTLBuffer> _triangleMaskBuffer;
     
     id <MTLComputePipelineState> _rayPipeline;
@@ -47,12 +46,12 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLComputePipelineState> _accumulatePipeline;
     id <MTLRenderPipelineState> _copyPipeline;
     
-    id <MTLTexture> _renderTarget;
-    id <MTLTexture> _accumulationTarget;
+    id <MTLTexture> _renderTargets[2];
+    id <MTLTexture> _accumulationTargets[2];
+    id <MTLTexture> _randomTexture;
     
     dispatch_semaphore_t _sem;
     CGSize _size;
-    NSUInteger _randomBufferOffset;
     NSUInteger _uniformBufferOffset;
     NSUInteger _uniformBufferIndex;
 
@@ -223,8 +222,6 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     _uniformBuffer = [_device newBufferWithLength:uniformBufferSize options:options];
 
-    _randomBuffer = [_device newBufferWithLength:256 * sizeof(float2) * maxFramesInFlight options:options];
-    
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
     _vertexPositionBuffer = [_device newBufferWithLength:vertices.size() * sizeof(float3) options:options];
@@ -295,8 +292,36 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Indicate that we will read and write the texture from the GPU
     renderTargetDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
     
-    _renderTarget = [_device newTextureWithDescriptor:renderTargetDescriptor];
-    _accumulationTarget = [_device newTextureWithDescriptor:renderTargetDescriptor];
+    for (NSUInteger i = 0; i < 2; i++) {
+        _renderTargets[i] = [_device newTextureWithDescriptor:renderTargetDescriptor];
+        _accumulationTargets[i] = [_device newTextureWithDescriptor:renderTargetDescriptor];
+    }
+    
+    renderTargetDescriptor.pixelFormat = MTLPixelFormatR32Uint;
+    renderTargetDescriptor.usage = MTLTextureUsageShaderRead;
+#if !TARGET_OS_IPHONE
+    renderTargetDescriptor.storageMode = MTLStorageModeManaged;
+#else
+    renderTargetDescriptor.storageMode = MTLStorageModeShared;
+#endif
+    
+    // Generate a texture containing a random integer value for each pixel. This value
+    // will be used to decorrelate pixels while drawing pseudorandom numbers from the
+    // Halton sequence.
+    _randomTexture = [_device newTextureWithDescriptor:renderTargetDescriptor];
+    
+    uint32_t *randomValues = (uint32_t *)malloc(sizeof(uint32_t) * size.width * size.height);
+    
+    for (NSUInteger i = 0; i < size.width * size.height; i++)
+        randomValues[i] = rand() % (1024 * 1024);
+    
+    [_randomTexture replaceRegion:MTLRegionMake2D(0, 0, size.width, size.height)
+                      mipmapLevel:0
+                        withBytes:randomValues
+                      bytesPerRow:sizeof(uint32_t) * size.width];
+    
+    free(randomValues);
+    
     _frameIndex = 0;
 }
 
@@ -328,28 +353,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     uniforms->width = (unsigned int)_size.width;
     uniforms->height = (unsigned int)_size.height;
-    
-    uniforms->blocksWide = (uniforms->width + 15) / 16;
 
     uniforms->frameIndex = _frameIndex++;
     
 #if !TARGET_OS_IPHONE
     [_uniformBuffer didModifyRange:NSMakeRange(_uniformBufferOffset, alignedUniformsSize)];
-#endif
-
-    // Generate random values for this frame
-    _randomBufferOffset = 256 * sizeof(float2) * _uniformBufferIndex;
-
-    float2 *random = (float2 *)((char *)_randomBuffer.contents + _randomBufferOffset);
-
-    for (int i = 0; i < 256; i++)
-        random[i] = {
-            (float)rand() / (float)RAND_MAX,
-            (float)rand() / (float)RAND_MAX
-        };
-
-#if !TARGET_OS_IPHONE
-    [_randomBuffer didModifyRange:NSMakeRange(_randomBufferOffset, 256 * sizeof(float2))];
 #endif
     
     // Advance to the next slot in the uniform buffer
@@ -395,9 +403,9 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Bind buffers needed by the compute pipeline
     [computeEncoder setBuffer:_uniformBuffer   offset:_uniformBufferOffset atIndex:0];
     [computeEncoder setBuffer:_rayBuffer       offset:0                    atIndex:1];
-    [computeEncoder setBuffer:_randomBuffer    offset:_randomBufferOffset  atIndex:2];
     
-    [computeEncoder setTexture:_renderTarget atIndex:0];
+    [computeEncoder setTexture:_randomTexture    atIndex:0];
+    [computeEncoder setTexture:_renderTargets[0] atIndex:1];
     
     // Bind the ray generation compute pipeline
     [computeEncoder setComputePipelineState:_rayPipeline];
@@ -430,17 +438,18 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [computeEncoder setBuffer:_intersectionBuffer offset:0                    atIndex:3];
         [computeEncoder setBuffer:_vertexColorBuffer  offset:0                    atIndex:4];
         [computeEncoder setBuffer:_vertexNormalBuffer offset:0                    atIndex:5];
-        [computeEncoder setBuffer:_randomBuffer       offset:_randomBufferOffset  atIndex:6];
-        [computeEncoder setBuffer:_triangleMaskBuffer offset:0                    atIndex:7];
+        [computeEncoder setBuffer:_triangleMaskBuffer offset:0                    atIndex:6];
+        [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:7];
         
-        [computeEncoder setTexture:_renderTarget atIndex:0];
+        [computeEncoder setTexture:_randomTexture    atIndex:0];
+        [computeEncoder setTexture:_renderTargets[0] atIndex:1];
         
         [computeEncoder setComputePipelineState:_shadePipeline];
         
         [computeEncoder dispatchThreadgroups:threadgroups threadsPerThreadgroup:threadsPerThreadgroup];
         
         [computeEncoder endEncoding];
-
+        
         // We intersect rays with the scene, except this time we are intersecting shadow rays. We only need
         // to know whether the shadows rays hit anything on the way to the light source, not which triangle
         // was intersected. Therefore, we can use the "any" intersection type to end the intersection search
@@ -468,13 +477,16 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [computeEncoder setBuffer:_shadowRayBuffer    offset:0                    atIndex:1];
         [computeEncoder setBuffer:_intersectionBuffer offset:0                    atIndex:2];
         
-        [computeEncoder setTexture:_renderTarget atIndex:0];
+        [computeEncoder setTexture:_renderTargets[0] atIndex:0];
+        [computeEncoder setTexture:_renderTargets[1] atIndex:1];
         
         [computeEncoder setComputePipelineState:_shadowPipeline];
         
         [computeEncoder dispatchThreadgroups:threadgroups threadsPerThreadgroup:threadsPerThreadgroup];
         
         [computeEncoder endEncoding];
+        
+        std::swap(_renderTargets[0], _renderTargets[1]);
     }
 
     // The final kernel averages the current frame's image with all previous frames to reduce noise due
@@ -483,14 +495,17 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         
     [computeEncoder setBuffer:_uniformBuffer      offset:_uniformBufferOffset atIndex:0];
     
-    [computeEncoder setTexture:_renderTarget       atIndex:0];
-    [computeEncoder setTexture:_accumulationTarget atIndex:1];
+    [computeEncoder setTexture:_renderTargets[0]       atIndex:0];
+    [computeEncoder setTexture:_accumulationTargets[0] atIndex:1];
+    [computeEncoder setTexture:_accumulationTargets[1] atIndex:2];
     
     [computeEncoder setComputePipelineState:_accumulatePipeline];
     
     [computeEncoder dispatchThreadgroups:threadgroups threadsPerThreadgroup:threadsPerThreadgroup];
     
     [computeEncoder endEncoding];
+    
+    std::swap(_accumulationTargets[0], _accumulationTargets[1]);
 
     // Copy the resulting image into our view using the graphics pipeline since we can't write directly to
     // it with a compute kernel. We need to delay getting the current render pass descriptor as long as
@@ -505,7 +520,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 
         [renderEncoder setRenderPipelineState:_copyPipeline];
         
-        [renderEncoder setFragmentTexture:_accumulationTarget atIndex:0];
+        [renderEncoder setFragmentTexture:_accumulationTargets[0] atIndex:0];
 
         // Draw a quad which fills the screen
         [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];

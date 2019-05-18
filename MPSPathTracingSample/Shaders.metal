@@ -50,16 +50,46 @@ struct Intersection {
     float2 coordinates;
 };
 
+constant unsigned int primes[] = {
+    2,   3,  5,  7,
+    11, 13, 17, 19,
+    23, 29, 31, 37,
+    41, 43, 47, 53,
+};
+
+// Returns the i'th element of the Halton sequence using the d'th prime number as a
+// base. The Halton sequence is a "low discrepency" sequence: the values appear
+// random but are more evenly distributed then a purely random sequence. Each random
+// value used to render the image should use a different independent dimension 'd',
+// and each sample (frame) should use a different index 'i'. To decorrelate each
+// pixel, a random offset can be applied to 'i'.
+float halton(unsigned int i, unsigned int d) {
+    unsigned int b = primes[d];
+    
+    float f = 1.0f;
+    float invB = 1.0f / b;
+    
+    float r = 0;
+    
+    while (i > 0) {
+        f = f * invB;
+        r = r + f * (i % b);
+        i = i / b;
+    }
+    
+    return r;
+}
+
 // Generates rays starting from the camera origin and traveling towards the image plane aligned
 // with the camera's coordinate system.
-kernel void rayKernel(uint2 tid                    [[thread_position_in_grid]],
+kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
                       // Buffers bound on the CPU. Note that 'constant' should be used for small
                       // read-only data which will be reused across threads. 'device' should be
                       // used for writable data or data which will only be used by a single thread.
-                      constant Uniforms & uniforms [[buffer(0)]],
-                      device Ray *rays          [[buffer(1)]],
-                      device float2 *random,
-                      texture2d<float, access::write> dstTex [[texture(0)]])
+                      constant Uniforms & uniforms,
+                      device Ray *rays,
+                      texture2d<unsigned int> randomTex,
+                      texture2d<float, access::write> dstTex)
 {
     // Since we aligned the thread count to the threadgroup size, the thread index may be out of bounds
     // of the render target size.
@@ -73,8 +103,13 @@ kernel void rayKernel(uint2 tid                    [[thread_position_in_grid]],
         // Pixel coordinates for this thread
         float2 pixel = (float2)tid;
 
+        // Apply a random offset to random number index to decorrelate pixels
+        unsigned int offset = randomTex.read(tid).x;
+        
         // Add a random offset to the pixel coordinates for antialiasing
-        float2 r = random[(tid.y % 16) * 16 + (tid.x % 16)];
+        float2 r = float2(halton(offset + uniforms.frameIndex, 0),
+                          halton(offset + uniforms.frameIndex, 1));
+        
         pixel += r;
         
         // Map pixel coordinates to -1..1
@@ -207,8 +242,9 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         device Intersection *intersections,
                         device float3 *vertexColors,
                         device float3 *vertexNormals,
-                        device float2 *random,
                         device uint *triangleMasks,
+                        constant unsigned int & bounce,
+                        texture2d<unsigned int> randomTex,
                         texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
@@ -235,9 +271,12 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 float3 surfaceNormal = interpolateVertexAttribute(vertexNormals, intersection);
                 surfaceNormal = normalize(surfaceNormal);
 
-                // Look up two uniformly random numbers for this thread
-                float2 r = random[(tid.y % 16) * 16 + (tid.x % 16)];
-
+                unsigned int offset = randomTex.read(tid).x;
+                
+                // Look up two random numbers for this thread
+                float2 r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0),
+                                  halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1));
+                
                 float3 lightDirection;
                 float3 lightColor;
                 float lightDistance;
@@ -285,6 +324,9 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // sample direction and surface normal, the math entirely cancels out except for
                 // multiplying by the interpolated vertex color. This sampling strategy also reduces
                 // the amount of noise in the output image.
+                r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2),
+                           halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
+                
                 float3 sampleDirection = sampleCosineWeightedHemisphere(r);
                 sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
 
@@ -317,7 +359,8 @@ kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
                          constant Uniforms & uniforms,
                          device Ray *shadowRays,
                          device float *intersections,
-                         texture2d<float, access::read_write> dstTex)
+                         texture2d<float, access::read> srcTex,
+                         texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         unsigned int rayIdx = tid.y * uniforms.width + tid.x;
@@ -328,17 +371,16 @@ kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
         // you'll save memory bandwidth.
         float intersectionDistance = intersections[rayIdx];
         
+        float3 color = srcTex.read(tid).xyz;
+        
         // If the shadow ray wasn't disabled (max distance >= 0) and it didn't hit anything
         // on the way to the light source, add the color passed along with the shadow ray
         // to the output image.
-        if (shadowRay.maxDistance >= 0.0f && intersectionDistance < 0.0f) {
-            float3 color = shadowRay.color;
-            
-            color += dstTex.read(tid).xyz;
-            
-            // Write result to render target
-            dstTex.write(float4(color, 1.0f), tid);
-        }
+        if (shadowRay.maxDistance >= 0.0f && intersectionDistance < 0.0f)
+            color += shadowRay.color;
+        
+        // Write result to render target
+        dstTex.write(float4(color, 1.0f), tid);
     }
 }
 
@@ -347,14 +389,15 @@ kernel void shadowKernel(uint2 tid [[thread_position_in_grid]],
 kernel void accumulateKernel(uint2 tid [[thread_position_in_grid]],
                              constant Uniforms & uniforms,
                              texture2d<float> renderTex,
-                             texture2d<float, access::read_write> accumTex)
+                             texture2d<float> prevTex,
+                             texture2d<float, access::write> accumTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         float3 color = renderTex.read(tid).xyz;
 
         // Compute the average of all frames including the current frame
         if (uniforms.frameIndex > 0) {
-            float3 prevColor = accumTex.read(tid).xyz;
+            float3 prevColor = prevTex.read(tid).xyz;
             prevColor *= uniforms.frameIndex;
             
             color += prevColor;

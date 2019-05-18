@@ -36,7 +36,6 @@ struct Uniforms
 {
     unsigned int width;
     unsigned int height;
-    unsigned int blocksWide;
     unsigned int frameIndex;
     Camera camera;
     AreaLight light;

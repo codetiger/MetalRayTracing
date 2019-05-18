@@ -30,8 +30,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		095BB170095BAA0000000001 /* SampleCode.xcconfig */ = {isa = PBXFileReference; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		0B0943200B09441000000001 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE.txt; sourceTree = "<group>"; };
 		3E9448D520BC6BF0001DD43A /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		51564714205B0E0B006AF627 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		51564716205B0E11006AF627 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
@@ -62,6 +60,8 @@
 		51F7FFFD209BC3E90017E288 /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		51F7FFFE209BC3E90017E288 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		51F7FFFF209BC3E90017E288 /* GameViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GameViewController.h; sourceTree = "<group>"; };
+		78F3A0E078F4118000000001 /* SampleCode.xcconfig */ = {isa = PBXFileReference; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
+		7B1474507B1471A000000001 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,23 +84,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		095BB570095BB67000000001 /* Configuration */ = {
-			isa = PBXGroup;
-			children = (
-				095BB170095BAA0000000001 /* SampleCode.xcconfig */,
-			);
-			name = Configuration;
-			sourceTree = "<group>";
-		};
-		0B093D600B093D3000000001 /* LICENSE */ = {
-			isa = PBXGroup;
-			children = (
-				0B0943200B09441000000001 /* LICENSE.txt */,
-			);
-			name = LICENSE;
-			path = LICENSE;
-			sourceTree = "<group>";
-		};
 		51E97F632016FC6600D09D13 = {
 			isa = PBXGroup;
 			children = (
@@ -108,8 +91,8 @@
 				51E97F682016FC6600D09D13 /* MPSPathTracingSample */,
 				51E97F732016FC6700D09D13 /* Products */,
 				51E97FA42017014100D09D13 /* Frameworks */,
-				095BB570095BB67000000001 /* Configuration */,
-				0B093D600B093D3000000001 /* LICENSE */,
+				78F3FEB078F379B000000001 /* Configuration */,
+				7B146B407B146E0000000001 /* LICENSE */,
 			);
 			sourceTree = "<group>";
 		};
@@ -179,6 +162,23 @@
 			path = macOS;
 			sourceTree = "<group>";
 		};
+		78F3FEB078F379B000000001 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				78F3A0E078F4118000000001 /* SampleCode.xcconfig */,
+			);
+			name = Configuration;
+			sourceTree = "<group>";
+		};
+		7B146B407B146E0000000001 /* LICENSE */ = {
+			isa = PBXGroup;
+			children = (
+				7B1474507B1471A000000001 /* LICENSE.txt */,
+			);
+			name = LICENSE;
+			path = LICENSE;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -189,6 +189,7 @@
 				51F7FFB2209BC1C40017E288 /* Sources */,
 				51F7FFB9209BC1C40017E288 /* Frameworks */,
 				51F7FFBB209BC1C40017E288 /* Resources */,
+				5E80BF805E80BDD000000001,
 			);
 			buildRules = (
 			);
@@ -206,6 +207,7 @@
 				51F7FFC5209BC1C60017E288 /* Sources */,
 				51F7FFCC209BC1C60017E288 /* Frameworks */,
 				51F7FFCE209BC1C60017E288 /* Resources */,
+				5E80D2605E80D0D000000001,
 			);
 			buildRules = (
 			);
@@ -326,7 +328,7 @@
 /* Begin XCBuildConfiguration section */
 		51E97F9C2016FC6700D09D13 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -382,7 +384,7 @@
 		};
 		51E97F9D2016FC6700D09D13 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -431,7 +433,7 @@
 		};
 		51F7FFC0209BC1C40017E288 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -453,7 +455,7 @@
 		};
 		51F7FFC1209BC1C40017E288 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -476,7 +478,7 @@
 		};
 		51F7FFD2209BC1C60017E288 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
@@ -498,7 +500,7 @@
 		};
 		51F7FFD3209BC1C60017E288 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 095BB170095BAA0000000001 /* SampleCode.xcconfig */;
+			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
