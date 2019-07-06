@@ -1,9 +1,9 @@
 /*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Metal shaders used for ray tracing
-*/
+ See LICENSE folder for this sample’s licensing information.
+ 
+ Abstract:
+ Metal shaders used for ray tracing
+ */
 
 #include <metal_stdlib>
 #include <simd/simd.h>
@@ -89,6 +89,7 @@ kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
                       constant Uniforms & uniforms,
                       device Ray *rays,
                       texture2d<unsigned int> randomTex,
+                      texture2d<float> colorTex,
                       texture2d<float, access::write> dstTex)
 {
     // Since we aligned the thread count to the threadgroup size, the thread index may be out of bounds
@@ -96,13 +97,13 @@ kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         // Compute linear ray index from 2D position
         unsigned int rayIdx = tid.y * uniforms.width + tid.x;
-
+        
         // Ray we will produce
         device Ray & ray = rays[rayIdx];
-
+        
         // Pixel coordinates for this thread
         float2 pixel = (float2)tid;
-
+        
         // Apply a random offset to random number index to decorrelate pixels
         unsigned int offset = randomTex.read(tid).x;
         
@@ -191,8 +192,8 @@ inline void sampleAreaLight(constant AreaLight & light,
     
     // Transform into light's coordinate system
     float3 samplePosition = light.position +
-                            light.right * u.x +
-                            light.up * u.y;
+    light.right * u.x +
+    light.up * u.y;
     
     // Compute vector from sample point on light source to intersection point
     lightDirection = samplePosition - position;
@@ -242,9 +243,14 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         device Intersection *intersections,
                         device float3 *vertexColors,
                         device float3 *vertexNormals,
+                        device float2 *textureCoords,
+                        device uint *hasTexture,
+                        device float *reflection,
+                        device float *refraction,
                         device uint *triangleMasks,
                         constant unsigned int & bounce,
                         texture2d<unsigned int> randomTex,
+                        texture2d<float> colorTex,
                         texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
@@ -259,18 +265,18 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
         // iteration.
         if (ray.maxDistance >= 0.0f && intersection.distance >= 0.0f) {
             uint mask = triangleMasks[intersection.primitiveIndex];
-
+            
             // The light source is included in the acceleration structure so we can see it in the
             // final image. However, we will compute and sample the lighting directly, so we mask
             // the light out for shadow and secondary rays.
             if (mask == TRIANGLE_MASK_GEOMETRY) {
                 // Compute intersection point
                 float3 intersectionPoint = ray.origin + ray.direction * intersection.distance;
-
+                
                 // Interpolate the vertex normal at the intersection point
                 float3 surfaceNormal = interpolateVertexAttribute(vertexNormals, intersection);
                 surfaceNormal = normalize(surfaceNormal);
-
+                
                 unsigned int offset = randomTex.read(tid).x;
                 
                 // Look up two random numbers for this thread
@@ -289,9 +295,16 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // Scale the light color by the cosine of the angle between the light direction and
                 // surface normal
                 lightColor *= saturate(dot(surfaceNormal, lightDirection));
-
-                // Interpolate the vertex color at the intersection point
-                color *= interpolateVertexAttribute(vertexColors, intersection);
+                
+                uint hasTex = interpolateVertexAttribute(hasTexture, intersection);
+                if (hasTex == 1) {
+                    float2 texCoord = interpolateVertexAttribute(textureCoords, intersection);
+                    constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
+                    color *= colorTex.sample(sam, texCoord).xyz;
+                } else {
+                    // Interpolate the vertex color at the intersection point
+                    color *= interpolateVertexAttribute(vertexColors, intersection);
+                }
                 
                 // Compute the shadow ray. The shadow ray will check if the sample position on the
                 // light source is actually visible from the intersection point we are shading.
@@ -316,24 +329,35 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // output image if needed.
                 shadowRay.color = lightColor * color;
                 
-                // Next we choose a random direction to continue the path of the ray. This will
-                // cause light to bounce between surfaces. Normally we would apply a fair bit of math
-                // to compute the fraction of reflected by the current intersection point to the
-                // previous point from the next point. However, by choosing a random direction with
-                // probability proportional to the cosine (dot product) of the angle between the
-                // sample direction and surface normal, the math entirely cancels out except for
-                // multiplying by the interpolated vertex color. This sampling strategy also reduces
-                // the amount of noise in the output image.
-                r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2),
-                           halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
-                
-                float3 sampleDirection = sampleCosineWeightedHemisphere(r);
-                sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
-
-                ray.origin = intersectionPoint + surfaceNormal * 1e-3f;
-                ray.direction = sampleDirection;
-                ray.color = color;
-                ray.mask = RAY_MASK_SECONDARY;
+                float reflectionIndex = interpolateVertexAttribute(reflection, intersection);
+                if (reflectionIndex > 0.0f) {
+                    float3 reflectDirection = reflect(ray.direction.xyz, surfaceNormal);
+                    
+                    ray.origin = intersectionPoint + reflectDirection * 1e-3f;
+                    ray.direction = reflectDirection;
+                    ray.color = color * reflectionIndex;
+                    ray.mask = RAY_MASK_PRIMARY;
+                    ray.maxDistance = INFINITY;
+                } else {
+                    // Next we choose a random direction to continue the path of the ray. This will
+                    // cause light to bounce between surfaces. Normally we would apply a fair bit of math
+                    // to compute the fraction of reflected by the current intersection point to the
+                    // previous point from the next point. However, by choosing a random direction with
+                    // probability proportional to the cosine (dot product) of the angle between the
+                    // sample direction and surface normal, the math entirely cancels out except for
+                    // multiplying by the interpolated vertex color. This sampling strategy also reduces
+                    // the amount of noise in the output image.
+                    r = float2(halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2),
+                               halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 3));
+                    
+                    float3 sampleDirection = sampleCosineWeightedHemisphere(r);
+                    sampleDirection = alignHemisphereWithNormal(sampleDirection, surfaceNormal);
+                    
+                    ray.origin = intersectionPoint + surfaceNormal * 1e-3f;
+                    ray.direction = sampleDirection;
+                    ray.color = color;
+                    ray.mask = RAY_MASK_SECONDARY;
+                }
             }
             else {
                 // In this case, a ray coming from the camera hit the light source directly, so
@@ -394,7 +418,7 @@ kernel void accumulateKernel(uint2 tid [[thread_position_in_grid]],
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
         float3 color = renderTex.read(tid).xyz;
-
+        
         // Compute the average of all frames including the current frame
         if (uniforms.frameIndex > 0) {
             float3 prevColor = prevTex.read(tid).xyz;

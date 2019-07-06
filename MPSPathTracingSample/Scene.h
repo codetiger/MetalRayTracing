@@ -1,9 +1,9 @@
 /*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Header for scene creation functions
-*/
+ See LICENSE folder for this sample’s licensing information.
+ 
+ Abstract:
+ Header for scene creation functions
+ */
 
 #ifndef Scene_h
 #define Scene_h
@@ -13,6 +13,10 @@ Header for scene creation functions
 
 extern std::vector<vector_float3> vertices;
 extern std::vector<vector_float3> normals;
+extern std::vector<vector_float2> textureCoords;
+extern std::vector<uint32_t> hasTextures;
+extern std::vector<float> reflections;
+extern std::vector<float> refractions;
 extern std::vector<vector_float3> colors;
 extern std::vector<uint32_t> masks;
 
@@ -29,6 +33,15 @@ void createCube(unsigned int faceMask,
                 vector_float3 color,
                 matrix_float4x4 transform,
                 bool inwardNormals,
+                bool hasTexture,
+                float reflection,
+                float refraction,
                 unsigned int triangleMask);
 
+void createSphere(vector_float3 color,
+                  matrix_float4x4 transform,
+                  bool hasTexture,
+                  float reflection,
+                  float refraction,
+                  unsigned int triangleMask);
 #endif /* Scene_h */

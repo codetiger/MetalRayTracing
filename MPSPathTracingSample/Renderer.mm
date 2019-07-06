@@ -1,9 +1,9 @@
 /*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Implementation for platform independent renderer class
-*/
+ See LICENSE folder for this sample’s licensing information.
+ 
+ Abstract:
+ Implementation for platform independent renderer class
+ */
 
 #import <simd/simd.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
@@ -34,6 +34,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLBuffer> _vertexPositionBuffer;
     id <MTLBuffer> _vertexNormalBuffer;
     id <MTLBuffer> _vertexColorBuffer;
+    id <MTLBuffer> _vertexTextureCoordsBuffer;
+    id <MTLBuffer> _hasTextureBuffer;
+    id <MTLBuffer> _reflectionBuffer;
+    id <MTLBuffer> _refractionBuffer;
+
     id <MTLBuffer> _rayBuffer;
     id <MTLBuffer> _shadowRayBuffer;
     id <MTLBuffer> _intersectionBuffer;
@@ -49,19 +54,20 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLTexture> _renderTargets[2];
     id <MTLTexture> _accumulationTargets[2];
     id <MTLTexture> _randomTexture;
+    id <MTLTexture> _colorTexture;
     
     dispatch_semaphore_t _sem;
     CGSize _size;
     NSUInteger _uniformBufferOffset;
     NSUInteger _uniformBufferIndex;
-
+    
     unsigned int _frameIndex;
 }
 
 -(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
 {
     self = [super init];
-
+    
     if (self)
     {
         // Metal device was created by platform-specific support code. See iOS/GameViewController.m
@@ -70,7 +76,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         _device = view.device;
         
         NSLog(@"Metal device: %@", _device.name);
-
+        
         _sem = dispatch_semaphore_create(maxFramesInFlight);
         
         [self loadMetal];
@@ -79,7 +85,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [self createBuffers];
         [self createIntersector];
     }
-
+    
     return self;
 }
 
@@ -89,7 +95,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _view.colorPixelFormat = MTLPixelFormatRGBA16Float;
     _view.sampleCount = 1;
     _view.drawableSize = _view.frame.size;
-
+    
     // Create Metal shader library and command queue. Commands will be executed by GPU from this command queue.
     _library = [_device newDefaultLibrary];
     _queue = [_device newCommandQueue];
@@ -101,7 +107,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     // Create compute pipelines will will execute code on the GPU
     MTLComputePipelineDescriptor *computeDescriptor = [[MTLComputePipelineDescriptor alloc] init];
-
+    
     // Set to YES to allow compiler to make certain optimizations
     computeDescriptor.threadGroupSizeIsMultipleOfThreadExecutionWidth = YES;
     
@@ -115,14 +121,14 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     if (!_rayPipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
-        
+    
     // Consumes ray/scene intersection test results to perform shading
     computeDescriptor.computeFunction = [_library newFunctionWithName:@"shadeKernel"];
     
     _shadePipeline = [_device newComputePipelineStateWithDescriptor:computeDescriptor
-                                                          options:0
-                                                       reflection:nil
-                                                            error:&error];
+                                                            options:0
+                                                         reflection:nil
+                                                              error:&error];
     
     if (!_shadePipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
@@ -137,7 +143,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     if (!_shadowPipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
-
+    
     // Averages the current frame's output image with all previous frames
     computeDescriptor.computeFunction = [_library newFunctionWithName:@"accumulateKernel"];
     
@@ -148,14 +154,14 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     if (!_accumulatePipeline)
         NSLog(@"Failed to create pipeline state: %@", error);
-
+    
     // Copies rendered scene into the MTKView
     MTLRenderPipelineDescriptor *renderDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
     renderDescriptor.sampleCount = _view.sampleCount;
     renderDescriptor.vertexFunction = [_library newFunctionWithName:@"copyVertex"];
     renderDescriptor.fragmentFunction = [_library newFunctionWithName:@"copyFragment"];
     renderDescriptor.colorAttachments[0].pixelFormat = _view.colorPixelFormat;
-
+    
     _copyPipeline = [_device newRenderPipelineStateWithDescriptor:renderDescriptor error:&error];
     
     if (!_copyPipeline)
@@ -165,40 +171,47 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 - (void)createScene
 {
     float4x4 transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) *
-                         matrix4x4_scale(0.5f, 1.98f, 0.5f);
+    matrix4x4_scale(0.5f, 1.98f, 0.5f);
     
     // Light source
-    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true,
-               TRIANGLE_MASK_LIGHT);
+    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_LIGHT);
     
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
     
     // Top, bottom, and back walls
-    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true,
-               TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true,
-               TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) *
     matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 0.6f, 0.6f);
     
     // Short box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false,
-               TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.725f, 0.725f), transform, false, true, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) *
     matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 1.2f, 0.6f);
     
     // Tall box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false,
-               TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    
+    transform = matrix4x4_translation(0.3275f, 1.3f, 0.3725f) *
+    matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
+    matrix4x4_scale(0.25f, 0.25f, 0.25f);
+
+    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, false, 1.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+
+    transform = matrix4x4_translation(-0.5f, 1.0f, 0.3725f) *
+    matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
+    matrix4x4_scale(0.3f, 0.3f, 0.3f);
+    
+    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, false, 0.0f, 1.0f, TRIANGLE_MASK_GEOMETRY);
 }
 
 - (void)createBuffers
@@ -213,7 +226,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // Private buffers are stored entirely in GPU memory and cannot be accessed by the CPU. Managed
     // buffers maintain a copy in CPU memory and a copy in GPU memory.
     MTLResourceOptions options = 0;
-
+    
 #if !TARGET_OS_IPHONE
     options = MTLResourceStorageModeManaged;
 #else
@@ -221,18 +234,26 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
 #endif
     
     _uniformBuffer = [_device newBufferWithLength:uniformBufferSize options:options];
-
+    
     // Allocate buffers for vertex positions, colors, and normals. Note that each vertex position is a
     // float3, which is a 16 byte aligned type.
     _vertexPositionBuffer = [_device newBufferWithLength:vertices.size() * sizeof(float3) options:options];
     _vertexColorBuffer = [_device newBufferWithLength:colors.size() * sizeof(float3) options:options];
     _vertexNormalBuffer = [_device newBufferWithLength:normals.size() * sizeof(float3) options:options];
+    _vertexTextureCoordsBuffer = [_device newBufferWithLength:textureCoords.size() * sizeof(float2) options:options];
+    _hasTextureBuffer = [_device newBufferWithLength:hasTextures.size() * sizeof(uint32_t) options:options];
+    _reflectionBuffer = [_device newBufferWithLength:reflections.size() * sizeof(float1) options:options];
+    _refractionBuffer = [_device newBufferWithLength:refractions.size() * sizeof(float1) options:options];
     _triangleMaskBuffer = [_device newBufferWithLength:masks.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
     memcpy(_vertexPositionBuffer.contents, &vertices[0], _vertexPositionBuffer.length);
     memcpy(_vertexColorBuffer.contents, &colors[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &normals[0], _vertexNormalBuffer.length);
+    memcpy(_vertexTextureCoordsBuffer.contents, &textureCoords[0], _vertexTextureCoordsBuffer.length);
+    memcpy(_hasTextureBuffer.contents, &hasTextures[0], _hasTextureBuffer.length);
+    memcpy(_reflectionBuffer.contents, &reflections[0], _reflectionBuffer.length);
+    memcpy(_refractionBuffer.contents, &refractions[0], _refractionBuffer.length);
     memcpy(_triangleMaskBuffer.contents, &masks[0], _triangleMaskBuffer.length);
     
     // When using managed buffers, we need to indicate that we modified the buffer so that the GPU
@@ -241,6 +262,10 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [_vertexPositionBuffer didModifyRange:NSMakeRange(0, _vertexPositionBuffer.length)];
     [_vertexColorBuffer didModifyRange:NSMakeRange(0, _vertexColorBuffer.length)];
     [_vertexNormalBuffer didModifyRange:NSMakeRange(0, _vertexNormalBuffer.length)];
+    [_vertexTextureCoordsBuffer didModifyRange:NSMakeRange(0, _vertexTextureCoordsBuffer.length)];
+    [_hasTextureBuffer didModifyRange:NSMakeRange(0, _hasTextureBuffer.length)];
+    [_reflectionBuffer didModifyRange:NSMakeRange(0, _reflectionBuffer.length)];
+    [_refractionBuffer didModifyRange:NSMakeRange(0, _refractionBuffer.length)];
     [_triangleMaskBuffer didModifyRange:NSMakeRange(0, _triangleMaskBuffer.length)];
 #endif
 }
@@ -285,10 +310,10 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     renderTargetDescriptor.textureType = MTLTextureType2D;
     renderTargetDescriptor.width = size.width;
     renderTargetDescriptor.height = size.height;
-
+    
     // Stored in private memory because it will only be read and written from the GPU
     renderTargetDescriptor.storageMode = MTLStorageModePrivate;
-
+    
     // Indicate that we will read and write the texture from the GPU
     renderTargetDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
     
@@ -322,15 +347,22 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     free(randomValues);
     
+    MTKTextureLoader *loader = [[MTKTextureLoader alloc] initWithDevice: _device];
+    NSURL *imageURL = [[NSBundle mainBundle] URLForResource:@"crate" withExtension:@"jpg"];
+    _colorTexture = [loader newTextureWithContentsOfURL:imageURL options:nil error:nil];
+    
+    if(!_colorTexture)
+        NSLog(@"Failed to create the texture from %@", imageURL.absoluteString);
+    
     _frameIndex = 0;
 }
 
 - (void)updateUniforms {
     // Update this frame's uniforms
     _uniformBufferOffset = alignedUniformsSize * _uniformBufferIndex;
-
+    
     Uniforms *uniforms = (Uniforms *)((char *)_uniformBuffer.contents + _uniformBufferOffset);
-
+    
     uniforms->camera.position = vector3(0.0f, 1.0f, 3.38f);
     
     uniforms->camera.forward = vector3(0.0f, 0.0f, -1.0f);
@@ -353,7 +385,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     uniforms->width = (unsigned int)_size.width;
     uniforms->height = (unsigned int)_size.height;
-
+    
     uniforms->frameIndex = _frameIndex++;
     
 #if !TARGET_OS_IPHONE
@@ -369,17 +401,17 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // We are using the uniform buffer to stream uniform data to the GPU, so we need to wait until the oldest
     // GPU frame has completed before we can reuse that space in the buffer.
     dispatch_semaphore_wait(_sem, DISPATCH_TIME_FOREVER);
-
+    
     // Create a command buffer which will contain our GPU commands
     id <MTLCommandBuffer> commandBuffer = [_queue commandBuffer];
-
+    
     // When the frame has finished, signal that we can reuse the uniform buffer space from this frame.
     // Note that the contents of completion handlers should be as fast as possible as the GPU driver may
     // have other work scheduled on the underlying dispatch queue.
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
         dispatch_semaphore_signal(self->_sem);
     }];
-
+    
     [self updateUniforms];
     
     NSUInteger width = (NSUInteger)_size.width;
@@ -405,7 +437,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [computeEncoder setBuffer:_rayBuffer       offset:0                    atIndex:1];
     
     [computeEncoder setTexture:_randomTexture    atIndex:0];
-    [computeEncoder setTexture:_renderTargets[0] atIndex:1];
+    [computeEncoder setTexture:_colorTexture    atIndex:1];
+    [computeEncoder setTexture:_renderTargets[0] atIndex:2];
     
     // Bind the ray generation compute pipeline
     [computeEncoder setComputePipelineState:_rayPipeline];
@@ -419,7 +452,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     // We will iterate over the next few kernels several times to allow light to bounce around the scene
     for (int bounce = 0; bounce < 3; bounce++) {
         _intersector.intersectionDataType = MPSIntersectionDataTypeDistancePrimitiveIndexCoordinates;
-
+        
         // We can then pass the rays to the MPSRayIntersector to compute the intersections with our acceleration structure
         [_intersector encodeIntersectionToCommandBuffer:commandBuffer               // Command buffer to encode into
                                        intersectionType:MPSIntersectionTypeNearest  // Intersection test type
@@ -432,17 +465,22 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         // We launch another pipeline to consume the intersection results and shade the scene
         computeEncoder = [commandBuffer computeCommandEncoder];
         
-        [computeEncoder setBuffer:_uniformBuffer      offset:_uniformBufferOffset atIndex:0];
-        [computeEncoder setBuffer:_rayBuffer          offset:0                    atIndex:1];
-        [computeEncoder setBuffer:_shadowRayBuffer    offset:0                    atIndex:2];
-        [computeEncoder setBuffer:_intersectionBuffer offset:0                    atIndex:3];
-        [computeEncoder setBuffer:_vertexColorBuffer  offset:0                    atIndex:4];
-        [computeEncoder setBuffer:_vertexNormalBuffer offset:0                    atIndex:5];
-        [computeEncoder setBuffer:_triangleMaskBuffer offset:0                    atIndex:6];
-        [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:7];
+        [computeEncoder setBuffer:_uniformBuffer            offset:_uniformBufferOffset atIndex:0];
+        [computeEncoder setBuffer:_rayBuffer                offset:0                    atIndex:1];
+        [computeEncoder setBuffer:_shadowRayBuffer          offset:0                    atIndex:2];
+        [computeEncoder setBuffer:_intersectionBuffer       offset:0                    atIndex:3];
+        [computeEncoder setBuffer:_vertexColorBuffer        offset:0                    atIndex:4];
+        [computeEncoder setBuffer:_vertexNormalBuffer       offset:0                    atIndex:5];
+        [computeEncoder setBuffer:_vertexTextureCoordsBuffer offset:0                    atIndex:6];
+        [computeEncoder setBuffer:_hasTextureBuffer         offset:0                    atIndex:7];
+        [computeEncoder setBuffer:_reflectionBuffer         offset:0                    atIndex:8];
+        [computeEncoder setBuffer:_refractionBuffer         offset:0                    atIndex:9];
+        [computeEncoder setBuffer:_triangleMaskBuffer       offset:0                    atIndex:10];
+        [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:11];
         
         [computeEncoder setTexture:_randomTexture    atIndex:0];
-        [computeEncoder setTexture:_renderTargets[0] atIndex:1];
+        [computeEncoder setTexture:_colorTexture     atIndex:1];
+        [computeEncoder setTexture:_renderTargets[0] atIndex:2];
         
         [computeEncoder setComputePipelineState:_shadePipeline];
         
@@ -488,11 +526,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         
         std::swap(_renderTargets[0], _renderTargets[1]);
     }
-
+    
     // The final kernel averages the current frame's image with all previous frames to reduce noise due
     // random sampling of the scene.
     computeEncoder = [commandBuffer computeCommandEncoder];
-        
+    
     [computeEncoder setBuffer:_uniformBuffer      offset:_uniformBufferOffset atIndex:0];
     
     [computeEncoder setTexture:_renderTargets[0]       atIndex:0];
@@ -506,31 +544,31 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [computeEncoder endEncoding];
     
     std::swap(_accumulationTargets[0], _accumulationTargets[1]);
-
+    
     // Copy the resulting image into our view using the graphics pipeline since we can't write directly to
     // it with a compute kernel. We need to delay getting the current render pass descriptor as long as
     // possible to avoid stalling until the GPU/compositor release a drawable. The render pass descriptor
     // may be nil if the window has moved off screen.
     MTLRenderPassDescriptor* renderPassDescriptor = view.currentRenderPassDescriptor;
-
+    
     if (renderPassDescriptor != nil) {
         // Create a render encoder
         id <MTLRenderCommandEncoder> renderEncoder =
         [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
-
+        
         [renderEncoder setRenderPipelineState:_copyPipeline];
         
         [renderEncoder setFragmentTexture:_accumulationTargets[0] atIndex:0];
-
+        
         // Draw a quad which fills the screen
         [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
-
+        
         [renderEncoder endEncoding];
-
+        
         // Present the drawable to the screen
         [commandBuffer presentDrawable:view.currentDrawable];
     }
-
+    
     // Finally, commit the command buffer so that the GPU can start executing
     [commandBuffer commit];
 }

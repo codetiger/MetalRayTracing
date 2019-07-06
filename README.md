@@ -208,3 +208,43 @@ inline float3 sampleCosineWeightedHemisphere(float2 u) {
     return float3(sin_theta * cos_phi, cos_theta, sin_theta * sin_phi);
 }
 ```
+
+## Texture Mapping
+
+![Image shows PNG texture mapped on to the cube](Documentation/texture_2x.png)
+
+The small cube is now coloured using a texture map. Texture coordinates, and the related attributes are passed to the kernel for loading the surface colour from the given png texture image. 
+
+The boolean value hasTexture represents whether the triangle has a texture mapped or not. And the Texture coordinates are used to get the colour. 
+
+```
+uint hasTex = interpolateVertexAttribute(hasTexture, intersection);
+if (hasTex == 1) {
+    float2 texCoord = interpolateVertexAttribute(textureCoords, intersection);
+    constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
+    color *= colorTex.sample(sam, texCoord).xyz;
+} else {
+    // Interpolate the vertex color at the intersection point
+    color *= interpolateVertexAttribute(vertexColors, intersection);
+}
+```
+
+## Reflection for metalic surface
+
+![Image shows fully reflective spheres](Documentation/reflection_2x.png)
+
+If the surface has reflection value, the ray is reflected on the surface by calculating the normal using reflect function. 
+
+```
+float reflectionIndex = interpolateVertexAttribute(reflection, intersection);
+if (reflectionIndex > 0.0f) {
+    float3 reflectDirection = reflect(ray.direction.xyz, surfaceNormal);
+    
+    ray.origin = intersectionPoint + reflectDirection * 1e-3f;
+    ray.direction = reflectDirection;
+    ray.color = color;
+    ray.mask = RAY_MASK_SECONDARY;
+} else {
+```
+
+
