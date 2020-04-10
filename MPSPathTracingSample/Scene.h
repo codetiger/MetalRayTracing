@@ -10,11 +10,12 @@
 
 #include <vector>
 #include <simd/simd.h>
+#import <ModelIO/ModelIO.h>
 
 extern std::vector<vector_float3> vertices;
 extern std::vector<vector_float3> normals;
 extern std::vector<vector_float2> textureCoords;
-extern std::vector<uint32_t> hasTextures;
+extern std::vector<uint32_t> textureIndices;
 extern std::vector<float> reflections;
 extern std::vector<float> refractions;
 extern std::vector<vector_float3> colors;
@@ -33,15 +34,24 @@ void createCube(unsigned int faceMask,
                 vector_float3 color,
                 matrix_float4x4 transform,
                 bool inwardNormals,
-                bool hasTexture,
+                unsigned int textureIndex,
                 float reflection,
                 float refraction,
                 unsigned int triangleMask);
 
 void createSphere(vector_float3 color,
                   matrix_float4x4 transform,
-                  bool hasTexture,
+                  unsigned int textureIndex,
                   float reflection,
                   float refraction,
                   unsigned int triangleMask);
+
+void createMesh(MDLMesh* mesh,
+                vector_float3 color,
+                matrix_float4x4 transform,
+                unsigned int textureIndex,
+                float reflection,
+                float refraction,
+                unsigned int triangleMask);
+
 #endif /* Scene_h */

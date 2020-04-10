@@ -2,7 +2,10 @@
 
 Use the Metal Performance Shaders ray intersector to perform ray-traced rendering.
 
-***Note: This repo is based on Apple's [Metal for Accelerating Ray Tracing](https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing) example available at the Developer portal. The features like reflection and texture mapping are added on top of the original codebase.***
+***Note: This repo is based on Apple's [Metal for Accelerating Ray Tracing](https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing) example available at the Developer portal. The features like reflection, OBJ Import and texture mapping are added on top of the original codebase.***
+
+## Final Output
+![Ray tracing on Metal devices with OBJ file import with texture mapping and reflection.](Documentation/final.png)
 
 ## Overview
 

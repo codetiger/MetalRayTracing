@@ -7,6 +7,8 @@
 
 #import <simd/simd.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
+#import <SceneKit/SceneKit.h>
+#import <ModelIO/ModelIO.h>
 
 #import "Renderer.h"
 #import "Transforms.h"
@@ -54,7 +56,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLTexture> _renderTargets[2];
     id <MTLTexture> _accumulationTargets[2];
     id <MTLTexture> _randomTexture;
-    id <MTLTexture> _colorTexture;
+    id <MTLTexture> _colorTexture[2];
     
     dispatch_semaphore_t _sem;
     CGSize _size;
@@ -174,7 +176,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     matrix4x4_scale(0.5f, 1.98f, 0.5f);
     
     // Light source
-    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_LIGHT);
+    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_LIGHT);
     
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
     
@@ -182,36 +184,40 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) *
     matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 0.6f, 0.6f);
     
     // Short box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.725f, 0.725f), transform, false, true, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.725f, 0.725f), transform, false, 1, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) *
     matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 1.2f, 0.6f);
     
     // Tall box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(0.3275f, 1.3f, 0.3725f) *
     matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
     matrix4x4_scale(0.25f, 0.25f, 0.25f);
 
-    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, false, 1.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
-
-    transform = matrix4x4_translation(-0.5f, 1.0f, 0.3725f) *
-    matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
-    matrix4x4_scale(0.3f, 0.3f, 0.3f);
+    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, 0, 1.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
-    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, false, 0.0f, 1.0f, TRIANGLE_MASK_GEOMETRY);
+    transform = matrix4x4_translation(-0.5f, 0.01f, 0.3725f) *
+    matrix4x4_rotation(0.01f, vector3(1.0f, 0.0f, 0.0f)) *
+    matrix4x4_scale(0.01f, 0.01f, 0.01f);
+
+    NSString* path = [[NSBundle mainBundle] pathForResource:@"mario" ofType:@"obj"];
+    NSURL *url = [NSURL fileURLWithPath:path];
+    MDLAsset *asset = [[MDLAsset alloc] initWithURL:url];
+    MDLMesh *mesh = (MDLMesh*)[asset objectAtIndex:0];
+    createMesh(mesh, vector3(1.0f, 1.0f, 1.0f), transform, 2, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
 }
 
 - (void)createBuffers
@@ -241,7 +247,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _vertexColorBuffer = [_device newBufferWithLength:colors.size() * sizeof(float3) options:options];
     _vertexNormalBuffer = [_device newBufferWithLength:normals.size() * sizeof(float3) options:options];
     _vertexTextureCoordsBuffer = [_device newBufferWithLength:textureCoords.size() * sizeof(float2) options:options];
-    _hasTextureBuffer = [_device newBufferWithLength:hasTextures.size() * sizeof(uint32_t) options:options];
+    _hasTextureBuffer = [_device newBufferWithLength:textureIndices.size() * sizeof(uint32_t) options:options];
     _reflectionBuffer = [_device newBufferWithLength:reflections.size() * sizeof(float1) options:options];
     _refractionBuffer = [_device newBufferWithLength:refractions.size() * sizeof(float1) options:options];
     _triangleMaskBuffer = [_device newBufferWithLength:masks.size() * sizeof(uint32_t) options:options];
@@ -251,7 +257,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     memcpy(_vertexColorBuffer.contents, &colors[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &normals[0], _vertexNormalBuffer.length);
     memcpy(_vertexTextureCoordsBuffer.contents, &textureCoords[0], _vertexTextureCoordsBuffer.length);
-    memcpy(_hasTextureBuffer.contents, &hasTextures[0], _hasTextureBuffer.length);
+    memcpy(_hasTextureBuffer.contents, &textureIndices[0], _hasTextureBuffer.length);
     memcpy(_reflectionBuffer.contents, &reflections[0], _reflectionBuffer.length);
     memcpy(_refractionBuffer.contents, &refractions[0], _refractionBuffer.length);
     memcpy(_triangleMaskBuffer.contents, &masks[0], _triangleMaskBuffer.length);
@@ -349,10 +355,16 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     
     MTKTextureLoader *loader = [[MTKTextureLoader alloc] initWithDevice: _device];
     NSURL *imageURL = [[NSBundle mainBundle] URLForResource:@"crate" withExtension:@"jpg"];
-    _colorTexture = [loader newTextureWithContentsOfURL:imageURL options:nil error:nil];
-    
-    if(!_colorTexture)
+    _colorTexture[0] = [loader newTextureWithContentsOfURL:imageURL options:nil error:nil];
+    if(!_colorTexture[0])
         NSLog(@"Failed to create the texture from %@", imageURL.absoluteString);
+
+    loader = [[MTKTextureLoader alloc] initWithDevice: _device];
+    imageURL = [[NSBundle mainBundle] URLForResource:@"mario" withExtension:@"png"];
+    _colorTexture[1] = [loader newTextureWithContentsOfURL:imageURL options:nil error:nil];
+    if(!_colorTexture[1])
+        NSLog(@"Failed to create the texture from %@", imageURL.absoluteString);
+
     
     _frameIndex = 0;
 }
@@ -437,8 +449,9 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [computeEncoder setBuffer:_rayBuffer       offset:0                    atIndex:1];
     
     [computeEncoder setTexture:_randomTexture    atIndex:0];
-    [computeEncoder setTexture:_colorTexture    atIndex:1];
-    [computeEncoder setTexture:_renderTargets[0] atIndex:2];
+    [computeEncoder setTexture:_colorTexture[0]  atIndex:1];
+    [computeEncoder setTexture:_colorTexture[1]  atIndex:2];
+    [computeEncoder setTexture:_renderTargets[0] atIndex:3];
     
     // Bind the ray generation compute pipeline
     [computeEncoder setComputePipelineState:_rayPipeline];
@@ -479,8 +492,9 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:11];
         
         [computeEncoder setTexture:_randomTexture    atIndex:0];
-        [computeEncoder setTexture:_colorTexture     atIndex:1];
-        [computeEncoder setTexture:_renderTargets[0] atIndex:2];
+        [computeEncoder setTexture:_colorTexture[0]     atIndex:1];
+        [computeEncoder setTexture:_colorTexture[1]     atIndex:2];
+        [computeEncoder setTexture:_renderTargets[0] atIndex:3];
         
         [computeEncoder setComputePipelineState:_shadePipeline];
         

@@ -8,6 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		3E9448D620BC6BF0001DD43A /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 3E9448D520BC6BF0001DD43A /* README.md */; };
+		4E289C562439C06E00069BF8 /* mario.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C542439C06E00069BF8 /* mario.obj */; };
+		4E289C572439C06E00069BF8 /* mario.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C552439C06E00069BF8 /* mario.png */; };
+		4E289C5B2439C93C00069BF8 /* mario.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C542439C06E00069BF8 /* mario.obj */; };
+		4E289C5C2439C94000069BF8 /* mario.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C552439C06E00069BF8 /* mario.png */; };
+		4E87EF612439BBE80029CED2 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4E87EF602439BBE80029CED2 /* crate.jpg */; };
+		4E87EF622439BBE80029CED2 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4E87EF602439BBE80029CED2 /* crate.jpg */; };
+		4EC9159024403945004F6B2A /* ModelIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EC9158F24403944004F6B2A /* ModelIO.framework */; };
+		4EC915922440394E004F6B2A /* ModelIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EC915912440394E004F6B2A /* ModelIO.framework */; };
 		51C2956220A81D5500F951BE /* Scene.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51C2956120A81D5500F951BE /* Scene.mm */; };
 		51C2956320A81D5500F951BE /* Scene.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51C2956120A81D5500F951BE /* Scene.mm */; };
 		51F7000A209BC4040017E288 /* Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51F7FFE0209BC3520017E288 /* Renderer.mm */; };
@@ -31,6 +39,11 @@
 
 /* Begin PBXFileReference section */
 		3E9448D520BC6BF0001DD43A /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		4E289C542439C06E00069BF8 /* mario.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = mario.obj; sourceTree = SOURCE_ROOT; };
+		4E289C552439C06E00069BF8 /* mario.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = mario.png; sourceTree = SOURCE_ROOT; };
+		4E87EF602439BBE80029CED2 /* crate.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = crate.jpg; sourceTree = SOURCE_ROOT; };
+		4EC9158F24403944004F6B2A /* ModelIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ModelIO.framework; path = System/Library/Frameworks/ModelIO.framework; sourceTree = SDKROOT; };
+		4EC915912440394E004F6B2A /* ModelIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ModelIO.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS13.2.sdk/System/Library/Frameworks/ModelIO.framework; sourceTree = DEVELOPER_DIR; };
 		51564714205B0E0B006AF627 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		51564716205B0E11006AF627 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
 		51C2956020A81D3300F951BE /* Scene.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Scene.h; sourceTree = "<group>"; };
@@ -60,8 +73,8 @@
 		51F7FFFD209BC3E90017E288 /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		51F7FFFE209BC3E90017E288 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		51F7FFFF209BC3E90017E288 /* GameViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GameViewController.h; sourceTree = "<group>"; };
-		78F3A0E078F4118000000001 /* SampleCode.xcconfig */ = {isa = PBXFileReference; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		7B1474507B1471A000000001 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE.txt; sourceTree = "<group>"; };
+		78F3A0E078F4118000000001 /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
+		7B1474507B1471A000000001 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +82,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EC915922440394E004F6B2A /* ModelIO.framework in Frameworks */,
 				51F7FFBA209BC1C40017E288 /* MetalPerformanceShaders.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -77,6 +91,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EC9159024403945004F6B2A /* ModelIO.framework in Frameworks */,
 				51F7FFCD209BC1C60017E288 /* MetalPerformanceShaders.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -99,6 +114,9 @@
 		51E97F682016FC6600D09D13 /* MPSPathTracingSample */ = {
 			isa = PBXGroup;
 			children = (
+				4E289C542439C06E00069BF8 /* mario.obj */,
+				4E289C552439C06E00069BF8 /* mario.png */,
+				4E87EF602439BBE80029CED2 /* crate.jpg */,
 				51F7FFDB209BC3520017E288 /* Renderer.h */,
 				51F7FFE0209BC3520017E288 /* Renderer.mm */,
 				51C2956020A81D3300F951BE /* Scene.h */,
@@ -125,6 +143,8 @@
 		51E97FA42017014100D09D13 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4EC9158F24403944004F6B2A /* ModelIO.framework */,
+				4EC915912440394E004F6B2A /* ModelIO.framework */,
 				51564716205B0E11006AF627 /* MetalPerformanceShaders.framework */,
 				51564714205B0E0B006AF627 /* Metal.framework */,
 				51E97FA72017014A00D09D13 /* MetalPerformanceShaders.framework */,
@@ -175,7 +195,6 @@
 			children = (
 				7B1474507B1471A000000001 /* LICENSE.txt */,
 			);
-			name = LICENSE;
 			path = LICENSE;
 			sourceTree = "<group>";
 		};
@@ -189,7 +208,6 @@
 				51F7FFB2209BC1C40017E288 /* Sources */,
 				51F7FFB9209BC1C40017E288 /* Frameworks */,
 				51F7FFBB209BC1C40017E288 /* Resources */,
-				5E80BF805E80BDD000000001,
 			);
 			buildRules = (
 			);
@@ -207,7 +225,6 @@
 				51F7FFC5209BC1C60017E288 /* Sources */,
 				51F7FFCC209BC1C60017E288 /* Frameworks */,
 				51F7FFCE209BC1C60017E288 /* Resources */,
-				5E80D2605E80D0D000000001,
 			);
 			buildRules = (
 			);
@@ -251,9 +268,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E289C572439C06E00069BF8 /* mario.png in Resources */,
 				3E9448D620BC6BF0001DD43A /* README.md in Resources */,
 				51F70013209BCA010017E288 /* LaunchScreen.storyboard in Resources */,
+				4E289C562439C06E00069BF8 /* mario.obj in Resources */,
 				51F70012209BCA010017E288 /* Main.storyboard in Resources */,
+				4E87EF612439BBE80029CED2 /* crate.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +281,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E289C5C2439C94000069BF8 /* mario.png in Resources */,
+				4E289C5B2439C93C00069BF8 /* mario.obj in Resources */,
 				51F7001A209BCA180017E288 /* Main.storyboard in Resources */,
+				4E87EF622439BBE80029CED2 /* crate.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -480,11 +503,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 25QRARVF8V;
 				INFOPLIST_FILE = MPSPathTracingSample/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -502,11 +524,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 78F3A0E078F4118000000001 /* SampleCode.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 25QRARVF8V;
 				INFOPLIST_FILE = MPSPathTracingSample/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

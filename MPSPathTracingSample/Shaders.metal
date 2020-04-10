@@ -89,7 +89,8 @@ kernel void rayKernel(uint2 tid [[thread_position_in_grid]],
                       constant Uniforms & uniforms,
                       device Ray *rays,
                       texture2d<unsigned int> randomTex,
-                      texture2d<float> colorTex,
+                      texture2d<float> colorTex1,
+                      texture2d<float> colorTex2,
                       texture2d<float, access::write> dstTex)
 {
     // Since we aligned the thread count to the threadgroup size, the thread index may be out of bounds
@@ -244,13 +245,14 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         device float3 *vertexColors,
                         device float3 *vertexNormals,
                         device float2 *textureCoords,
-                        device uint *hasTexture,
+                        device uint *textureIndex,
                         device float *reflection,
                         device float *refraction,
                         device uint *triangleMasks,
                         constant unsigned int & bounce,
                         texture2d<unsigned int> randomTex,
-                        texture2d<float> colorTex,
+                        texture2d<float> colorTex1,
+                        texture2d<float> colorTex2,
                         texture2d<float, access::write> dstTex)
 {
     if (tid.x < uniforms.width && tid.y < uniforms.height) {
@@ -296,11 +298,14 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // surface normal
                 lightColor *= saturate(dot(surfaceNormal, lightDirection));
                 
-                uint hasTex = interpolateVertexAttribute(hasTexture, intersection);
-                if (hasTex == 1) {
+                uint texIndex = interpolateVertexAttribute(textureIndex, intersection);
+                if (texIndex > 0) {
                     float2 texCoord = interpolateVertexAttribute(textureCoords, intersection);
                     constexpr sampler sam(min_filter::nearest, mag_filter::nearest, mip_filter::none);
-                    color *= colorTex.sample(sam, texCoord).xyz;
+                    if(texIndex == 1)
+                        color *= colorTex1.sample(sam, texCoord).xyz;
+                    else if(texIndex == 2)
+                        color *= colorTex2.sample(sam, texCoord).xyz;
                 } else {
                     // Interpolate the vertex color at the intersection point
                     color *= interpolateVertexAttribute(vertexColors, intersection);
