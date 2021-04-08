@@ -15,7 +15,9 @@ std::vector<vector_float3> normals;
 std::vector<vector_float2> textureCoords;
 std::vector<uint32_t> textureIndices;
 std::vector<float> reflections;
+std::vector<float> reflectionBlurs;
 std::vector<float> refractions;
+std::vector<float> refractionIndices;
 std::vector<vector_float3> colors;
 std::vector<uint32_t> masks;
 
@@ -39,7 +41,9 @@ void createCubeFace(std::vector<float3> & vertices,
                     bool inwardNormals,
                     unsigned int textureIndex,
                     float reflection,
+                    float reflectionBlur,
                     float refraction,
+                    float refractionIndex,
                     unsigned int triangleMask)
 {
     float3 v0 = cubeVertices[i0];
@@ -64,7 +68,9 @@ void createCubeFace(std::vector<float3> & vertices,
 
     for (int i = 0; i < 6; i++) {
         reflections.push_back(reflection);
+        reflectionBlurs.push_back(reflectionBlur);
         refractions.push_back(refraction);
+        refractionIndices.push_back(refractionIndex);
         textureIndices.push_back(textureIndex);
     }
 
@@ -95,7 +101,9 @@ void createCube(unsigned int faceMask,
                 bool inwardNormals,
                 unsigned int textureIndex,
                 float reflection,
+                float reflectionBlur,
                 float refraction,
+                float refractionIndex,
                 unsigned int triangleMask)
 {
     float3 cubeVertices[] = {
@@ -119,22 +127,22 @@ void createCube(unsigned int faceMask,
     }
     
     if (faceMask & FACE_MASK_NEGATIVE_X)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 4, 6, 2, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 4, 6, 2, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
     
     if (faceMask & FACE_MASK_POSITIVE_X)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 1, 3, 7, 5, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 1, 3, 7, 5, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
     
     if (faceMask & FACE_MASK_NEGATIVE_Y)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 1, 5, 4, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 1, 5, 4, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
     
     if (faceMask & FACE_MASK_POSITIVE_Y)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 2, 6, 7, 3, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 2, 6, 7, 3, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
     
     if (faceMask & FACE_MASK_NEGATIVE_Z)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 2, 3, 1, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 0, 2, 3, 1, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
     
     if (faceMask & FACE_MASK_POSITIVE_Z)
-        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 4, 5, 7, 6, inwardNormals, textureIndex, reflection, refraction, triangleMask);
+        createCubeFace(vertices, normals, textureCoords, colors, cubeVertices, color, 4, 5, 7, 6, inwardNormals, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
 }
 
 void createTriangle(std::vector<float3> & vertices,
@@ -147,12 +155,16 @@ void createTriangle(std::vector<float3> & vertices,
                     float3 color,
                     unsigned int textureIndex,
                     float reflection,
+                    float reflectionBlur,
                     float refraction,
+                    float refractionIndex,
                     unsigned int triangleMask)
 {
     for (int i = 0; i < 3; i++) {
         reflections.push_back(reflection);
+        reflectionBlurs.push_back(reflectionBlur);
         refractions.push_back(refraction);
+        refractionIndices.push_back(refractionIndex);
         textureIndices.push_back(textureIndex);
     }
     
@@ -173,7 +185,9 @@ void createSphere(vector_float3 color,
                   matrix_float4x4 transform,
                   unsigned int textureIndex,
                   float reflection,
+                  float reflectionBlur,
                   float refraction,
+                  float refractionIndex,
                   unsigned int triangleMask) {
     float pi = 22.0f / 7.0f;
     float deltaTheta = pi / (RING_STEPS + 2);
@@ -210,7 +224,7 @@ void createSphere(vector_float3 color,
                 (transform * vector4(v2, 0.0f)).xyz};
             
             float2 textureCoords0[] = {0.0f, 1.0f};
-            createTriangle(vertices, normals, textureCoords, colors, triangleVertices0, normal0, textureCoords0, color, textureIndex, reflection, refraction, triangleMask);
+            createTriangle(vertices, normals, textureCoords, colors, triangleVertices0, normal0, textureCoords0, color, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
             
             float3 triangleVertices1[] = {
                 (transform * vector4(v3, 1.0f)).xyz,
@@ -223,17 +237,22 @@ void createSphere(vector_float3 color,
                 (transform * vector4(v1, 0.0f)).xyz};
             
             float2 textureCoords1[] = {0.0f, 1.0f};
-            createTriangle(vertices, normals, textureCoords, colors, triangleVertices1, normal1, textureCoords1, color, textureIndex, reflection, refraction, triangleMask);
+            createTriangle(vertices, normals, textureCoords, colors, triangleVertices1, normal1, textureCoords1, color, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
             phi += deltaPhi;
         }
         theta += deltaTheta;
     }
-    
-//    drawVertex(0,0,1) //north pole end cap
-//    drawVertex(0, 0, -1) //south pole end cap
 }
 
-void createMesh(MDLMesh* mesh, vector_float3 color, matrix_float4x4 transform, unsigned int textureIndex, float reflection, float refraction, unsigned int triangleMask) {
+void createMesh(MDLMesh* mesh,
+                vector_float3 color,
+                matrix_float4x4 transform,
+                unsigned int textureIndex,
+                float reflection,
+                float reflectionBlur,
+                float refraction,
+                float refractionIndex,
+                unsigned int triangleMask) {
     for (int i = 0; i < (int)mesh.submeshes.count; i++) {
         MDLSubmesh *subMesh = mesh.submeshes[i];
         NSLog(@"Submesh Index count: %d", (int)subMesh.indexCount);
@@ -249,7 +268,6 @@ void createMesh(MDLMesh* mesh, vector_float3 color, matrix_float4x4 transform, u
 
         NSLog(@"Vertex Buffer Count: %d", (int)mesh.vertexCount);
         for (int i = 0; i < (int)subMesh.indexCount; i+=3) {
-//            NSLog(@"Triangle Indices: %d, %d, %d", (int)indices[i], (int)indices[i+1], (int)indices[i+2]);
             float3 v0 = vector3((float)vertexData[indices[i+0]*8 + 0], (float)vertexData[indices[i+0]*8 + 1], (float)vertexData[indices[i+0]*8 + 2]);
             float3 v1 = vector3((float)vertexData[indices[i+1]*8 + 0], (float)vertexData[indices[i+1]*8 + 1], (float)vertexData[indices[i+1]*8 + 2]);
             float3 v2 = vector3((float)vertexData[indices[i+2]*8 + 0], (float)vertexData[indices[i+2]*8 + 1], (float)vertexData[indices[i+2]*8 + 2]);
@@ -271,11 +289,7 @@ void createMesh(MDLMesh* mesh, vector_float3 color, matrix_float4x4 transform, u
             float2 t2 = vector2((float)vertexData[indices[i+2]*8 + 6], 1.0f - (float)vertexData[indices[i+2]*8 + 7]);
             float2 triangleTextureCoords[] = { t0, t1, t2};
 
-            createTriangle(vertices, normals, textureCoords, colors, triangleVertices, triangleNormals, triangleTextureCoords, color, textureIndex, reflection, refraction, triangleMask);
-            
-//            NSLog(@"Vertex Position: %f, %f, %f", (float)vertexData[i*8 + 0], (float)vertexData[i*8 + 1], (float)vertexData[i*8 + 2]);
-//            NSLog(@"Vertex Normal: %f, %f, %f", (float)vertexData[i*8 + 3], (float)vertexData[i*8 + 4], (float)vertexData[i*8 + 5]);
-//            NSLog(@"Vertex Texture Coord: %f, %f", (float)vertexData[i*8 + 6], (float)vertexData[i*8 + 7]);
+            createTriangle(vertices, normals, textureCoords, colors, triangleVertices, triangleNormals, triangleTextureCoords, color, textureIndex, reflection, reflectionBlur, refraction, refractionIndex, triangleMask);
         }
     }
 }

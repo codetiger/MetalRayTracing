@@ -37,9 +37,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     id <MTLBuffer> _vertexNormalBuffer;
     id <MTLBuffer> _vertexColorBuffer;
     id <MTLBuffer> _vertexTextureCoordsBuffer;
-    id <MTLBuffer> _hasTextureBuffer;
+    id <MTLBuffer> _textureIndexBuffer;
     id <MTLBuffer> _reflectionBuffer;
+    id <MTLBuffer> _reflectionBlurBuffer;
     id <MTLBuffer> _refractionBuffer;
+    id <MTLBuffer> _refractionIndexBuffer;
 
     id <MTLBuffer> _rayBuffer;
     id <MTLBuffer> _shadowRayBuffer;
@@ -176,40 +178,46 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     matrix4x4_scale(0.5f, 1.98f, 0.5f);
     
     // Light source
-    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_LIGHT);
+    createCube(FACE_MASK_POSITIVE_Y, vector3(1.0f, 1.0f, 1.0f), transform, true, 0, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_LIGHT);
     
     transform = matrix4x4_translation(0.0f, 1.0f, 0.0f) * matrix4x4_scale(2.0f, 2.0f, 2.0f);
     
     // Top, bottom, and back walls
-    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, false, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_Y | FACE_MASK_POSITIVE_Y | FACE_MASK_NEGATIVE_Z, vector3(0.725f, 0.71f, 0.68f), transform, true, false, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Left wall
-    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_NEGATIVE_X, vector3(0.63f, 0.065f, 0.05f), transform, true, 0, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     // Right wall
-    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_POSITIVE_X, vector3(0.14f, 0.45f, 0.091f), transform, true, 0, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
-    transform = matrix4x4_translation(0.3275f, 0.3f, 0.3725f) *
+    transform = matrix4x4_translation(0.3275f, 0.3f, 0.0f) *
     matrix4x4_rotation(-0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 0.6f, 0.6f);
     
     // Short box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.725f, 0.725f), transform, false, 1, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.725f, 0.725f), transform, false, 1, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
     transform = matrix4x4_translation(-0.335f, 0.6f, -0.29f) *
     matrix4x4_rotation(0.3f, vector3(0.0f, 1.0f, 0.0f)) *
     matrix4x4_scale(0.6f, 1.2f, 0.6f);
     
     // Tall box
-    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, 0, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createCube(FACE_MASK_ALL, vector3(0.725f, 0.71f, 0.68f), transform, false, 0, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
     
-    transform = matrix4x4_translation(0.3275f, 1.3f, 0.3725f) *
+    transform = matrix4x4_translation(0.3275f, 0.7f, 0.6f) *
     matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
     matrix4x4_scale(0.25f, 0.25f, 0.25f);
 
-    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, 0, 1.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
-    
-    transform = matrix4x4_translation(-0.5f, 0.01f, 0.3725f) *
+    createSphere(vector3(1.0f, 0.5f, 1.0f), transform, 0, 0.0f, 0.0f, 1.0f, 1.1f, TRIANGLE_MASK_GEOMETRY);
+
+    transform = matrix4x4_translation(-0.3275f, 0.7f, 0.3f) *
+    matrix4x4_rotation(1.9f, vector3(1.0f, 0.0f, 0.0f)) *
+    matrix4x4_scale(0.25f, 0.25f, 0.25f);
+
+    createSphere(vector3(1.0f, 1.0f, 1.0f), transform, 0, 1.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+
+    transform = matrix4x4_translation(0.3275f, 0.6f, -0.1) *
     matrix4x4_rotation(0.01f, vector3(1.0f, 0.0f, 0.0f)) *
     matrix4x4_scale(0.01f, 0.01f, 0.01f);
 
@@ -217,7 +225,7 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     NSURL *url = [NSURL fileURLWithPath:path];
     MDLAsset *asset = [[MDLAsset alloc] initWithURL:url];
     MDLMesh *mesh = (MDLMesh*)[asset objectAtIndex:0];
-    createMesh(mesh, vector3(1.0f, 1.0f, 1.0f), transform, 2, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
+    createMesh(mesh, vector3(1.0f, 1.0f, 1.0f), transform, 2, 0.0f, 0.0f, 0.0f, 0.0f, TRIANGLE_MASK_GEOMETRY);
 }
 
 - (void)createBuffers
@@ -247,9 +255,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _vertexColorBuffer = [_device newBufferWithLength:colors.size() * sizeof(float3) options:options];
     _vertexNormalBuffer = [_device newBufferWithLength:normals.size() * sizeof(float3) options:options];
     _vertexTextureCoordsBuffer = [_device newBufferWithLength:textureCoords.size() * sizeof(float2) options:options];
-    _hasTextureBuffer = [_device newBufferWithLength:textureIndices.size() * sizeof(uint32_t) options:options];
+    _textureIndexBuffer = [_device newBufferWithLength:textureIndices.size() * sizeof(uint32_t) options:options];
     _reflectionBuffer = [_device newBufferWithLength:reflections.size() * sizeof(float1) options:options];
+    _reflectionBlurBuffer = [_device newBufferWithLength:reflectionBlurs.size() * sizeof(float1) options:options];
     _refractionBuffer = [_device newBufferWithLength:refractions.size() * sizeof(float1) options:options];
+    _refractionIndexBuffer = [_device newBufferWithLength:refractionIndices.size() * sizeof(float1) options:options];
     _triangleMaskBuffer = [_device newBufferWithLength:masks.size() * sizeof(uint32_t) options:options];
     
     // Copy vertex data into buffers
@@ -257,9 +267,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     memcpy(_vertexColorBuffer.contents, &colors[0], _vertexColorBuffer.length);
     memcpy(_vertexNormalBuffer.contents, &normals[0], _vertexNormalBuffer.length);
     memcpy(_vertexTextureCoordsBuffer.contents, &textureCoords[0], _vertexTextureCoordsBuffer.length);
-    memcpy(_hasTextureBuffer.contents, &textureIndices[0], _hasTextureBuffer.length);
+    memcpy(_textureIndexBuffer.contents, &textureIndices[0], _textureIndexBuffer.length);
     memcpy(_reflectionBuffer.contents, &reflections[0], _reflectionBuffer.length);
+    memcpy(_reflectionBlurBuffer.contents, &reflectionBlurs[0], _reflectionBlurBuffer.length);
     memcpy(_refractionBuffer.contents, &refractions[0], _refractionBuffer.length);
+    memcpy(_refractionIndexBuffer.contents, &refractionIndices[0], _refractionIndexBuffer.length);
     memcpy(_triangleMaskBuffer.contents, &masks[0], _triangleMaskBuffer.length);
     
     // When using managed buffers, we need to indicate that we modified the buffer so that the GPU
@@ -269,9 +281,11 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     [_vertexColorBuffer didModifyRange:NSMakeRange(0, _vertexColorBuffer.length)];
     [_vertexNormalBuffer didModifyRange:NSMakeRange(0, _vertexNormalBuffer.length)];
     [_vertexTextureCoordsBuffer didModifyRange:NSMakeRange(0, _vertexTextureCoordsBuffer.length)];
-    [_hasTextureBuffer didModifyRange:NSMakeRange(0, _hasTextureBuffer.length)];
+    [_textureIndexBuffer didModifyRange:NSMakeRange(0, _textureIndexBuffer.length)];
     [_reflectionBuffer didModifyRange:NSMakeRange(0, _reflectionBuffer.length)];
+    [_reflectionBlurBuffer didModifyRange:NSMakeRange(0, _reflectionBlurBuffer.length)];
     [_refractionBuffer didModifyRange:NSMakeRange(0, _refractionBuffer.length)];
+    [_refractionIndexBuffer didModifyRange:NSMakeRange(0, _refractionIndexBuffer.length)];
     [_triangleMaskBuffer didModifyRange:NSMakeRange(0, _triangleMaskBuffer.length)];
 #endif
 }
@@ -369,7 +383,8 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
     _frameIndex = 0;
 }
 
-- (void)updateUniforms {
+- (void)updateUniforms
+{
     // Update this frame's uniforms
     _uniformBufferOffset = alignedUniformsSize * _uniformBufferIndex;
     
@@ -485,11 +500,13 @@ static const size_t intersectionStride = sizeof(MPSIntersectionDistancePrimitive
         [computeEncoder setBuffer:_vertexColorBuffer        offset:0                    atIndex:4];
         [computeEncoder setBuffer:_vertexNormalBuffer       offset:0                    atIndex:5];
         [computeEncoder setBuffer:_vertexTextureCoordsBuffer offset:0                    atIndex:6];
-        [computeEncoder setBuffer:_hasTextureBuffer         offset:0                    atIndex:7];
+        [computeEncoder setBuffer:_textureIndexBuffer         offset:0                    atIndex:7];
         [computeEncoder setBuffer:_reflectionBuffer         offset:0                    atIndex:8];
-        [computeEncoder setBuffer:_refractionBuffer         offset:0                    atIndex:9];
-        [computeEncoder setBuffer:_triangleMaskBuffer       offset:0                    atIndex:10];
-        [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:11];
+        [computeEncoder setBuffer:_reflectionBlurBuffer         offset:0                    atIndex:9];
+        [computeEncoder setBuffer:_refractionBuffer         offset:0                    atIndex:10];
+        [computeEncoder setBuffer:_refractionIndexBuffer         offset:0                    atIndex:11];
+        [computeEncoder setBuffer:_triangleMaskBuffer       offset:0                    atIndex:12];
+        [computeEncoder setBytes:&bounce              length:sizeof(bounce)       atIndex:13];
         
         [computeEncoder setTexture:_randomTexture    atIndex:0];
         [computeEncoder setTexture:_colorTexture[0]     atIndex:1];

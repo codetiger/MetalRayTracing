@@ -17,7 +17,9 @@ extern std::vector<vector_float3> normals;
 extern std::vector<vector_float2> textureCoords;
 extern std::vector<uint32_t> textureIndices;
 extern std::vector<float> reflections;
+extern std::vector<float> reflectionBlurs;
 extern std::vector<float> refractions;
+extern std::vector<float> refractionIndices;
 extern std::vector<vector_float3> colors;
 extern std::vector<uint32_t> masks;
 
@@ -36,14 +38,18 @@ void createCube(unsigned int faceMask,
                 bool inwardNormals,
                 unsigned int textureIndex,
                 float reflection,
+                float reflectionBlur,
                 float refraction,
+                float refractionIndex,
                 unsigned int triangleMask);
 
 void createSphere(vector_float3 color,
                   matrix_float4x4 transform,
                   unsigned int textureIndex,
                   float reflection,
+                  float reflectionBlur,
                   float refraction,
+                  float refractionIndex,
                   unsigned int triangleMask);
 
 void createMesh(MDLMesh* mesh,
@@ -51,7 +57,9 @@ void createMesh(MDLMesh* mesh,
                 matrix_float4x4 transform,
                 unsigned int textureIndex,
                 float reflection,
+                float reflectionBlur,
                 float refraction,
+                float refractionIndex,
                 unsigned int triangleMask);
 
 #endif /* Scene_h */

@@ -247,7 +247,9 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                         device float2 *textureCoords,
                         device uint *textureIndex,
                         device float *reflection,
+                        device float *reflectionBlur,
                         device float *refraction,
+                        device float *refractionIndex,
                         device uint *triangleMasks,
                         constant unsigned int & bounce,
                         texture2d<unsigned int> randomTex,
@@ -334,15 +336,38 @@ kernel void shadeKernel(uint2 tid [[thread_position_in_grid]],
                 // output image if needed.
                 shadowRay.color = lightColor * color;
                 
-                float reflectionIndex = interpolateVertexAttribute(reflection, intersection);
-                if (reflectionIndex > 0.0f) {
-                    float3 reflectDirection = reflect(ray.direction.xyz, surfaceNormal);
+                float reflectionValue = interpolateVertexAttribute(reflection, intersection);
+                float refractionValue = interpolateVertexAttribute(refraction, intersection);
+                if (reflectionValue > 0.0f) {
+                    float reflectionBlurValue = interpolateVertexAttribute(reflectionBlur, intersection);
+
+                    float3 rayDirection = reflect(ray.direction.xyz, surfaceNormal);
+                    rayDirection.x += reflectionBlurValue * halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 0);
+                    rayDirection.y += reflectionBlurValue * halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 1);
+                    rayDirection.z += reflectionBlurValue * halton(offset + uniforms.frameIndex, 2 + bounce * 4 + 2);
                     
-                    ray.origin = intersectionPoint + reflectDirection * 1e-3f;
-                    ray.direction = reflectDirection;
-                    ray.color = color * reflectionIndex;
+                    ray.origin = intersectionPoint + rayDirection * 1e-3f;
+                    ray.direction = rayDirection;
+                    ray.color = color * reflectionValue;
                     ray.mask = RAY_MASK_PRIMARY;
                     ray.maxDistance = INFINITY;
+                    shadowRay.maxDistance = -1.0f;
+                } else if (refractionValue > 0.0f) {
+                    float refractionIndexValue = interpolateVertexAttribute(refractionIndex, intersection);
+                    bool inside = false;
+                    if (dot(ray.direction, surfaceNormal) > 0) {
+                        inside = true;
+                        surfaceNormal = -surfaceNormal;
+                    }
+                    float eta = (inside) ? refractionIndexValue : 1.0f / refractionIndexValue;
+                    float3 rayDirection = refract(ray.direction.xyz, surfaceNormal, eta);
+
+                    ray.origin = intersectionPoint + rayDirection * 1e-3f;
+                    ray.direction = rayDirection;
+                    ray.color = color * refractionValue;
+                    ray.mask = RAY_MASK_PRIMARY;
+                    ray.maxDistance = INFINITY;
+                    shadowRay.maxDistance = -1.0f;
                 } else {
                     // Next we choose a random direction to continue the path of the ray. This will
                     // cause light to bounce between surfaces. Normally we would apply a fair bit of math

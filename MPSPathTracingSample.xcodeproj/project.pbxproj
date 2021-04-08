@@ -12,10 +12,10 @@
 		4E289C572439C06E00069BF8 /* mario.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C552439C06E00069BF8 /* mario.png */; };
 		4E289C5B2439C93C00069BF8 /* mario.obj in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C542439C06E00069BF8 /* mario.obj */; };
 		4E289C5C2439C94000069BF8 /* mario.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E289C552439C06E00069BF8 /* mario.png */; };
-		4E87EF612439BBE80029CED2 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4E87EF602439BBE80029CED2 /* crate.jpg */; };
-		4E87EF622439BBE80029CED2 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4E87EF602439BBE80029CED2 /* crate.jpg */; };
 		4EC9159024403945004F6B2A /* ModelIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EC9158F24403944004F6B2A /* ModelIO.framework */; };
 		4EC915922440394E004F6B2A /* ModelIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EC915912440394E004F6B2A /* ModelIO.framework */; };
+		4EE7DAD5261ED90F00BF6A62 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4EE7DAD4261ED90F00BF6A62 /* crate.jpg */; };
+		4EE7DAD8261ED97000BF6A62 /* crate.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 4EE7DAD4261ED90F00BF6A62 /* crate.jpg */; };
 		51C2956220A81D5500F951BE /* Scene.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51C2956120A81D5500F951BE /* Scene.mm */; };
 		51C2956320A81D5500F951BE /* Scene.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51C2956120A81D5500F951BE /* Scene.mm */; };
 		51F7000A209BC4040017E288 /* Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 51F7FFE0209BC3520017E288 /* Renderer.mm */; };
@@ -41,9 +41,9 @@
 		3E9448D520BC6BF0001DD43A /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		4E289C542439C06E00069BF8 /* mario.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = mario.obj; sourceTree = SOURCE_ROOT; };
 		4E289C552439C06E00069BF8 /* mario.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = mario.png; sourceTree = SOURCE_ROOT; };
-		4E87EF602439BBE80029CED2 /* crate.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = crate.jpg; sourceTree = SOURCE_ROOT; };
 		4EC9158F24403944004F6B2A /* ModelIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ModelIO.framework; path = System/Library/Frameworks/ModelIO.framework; sourceTree = SDKROOT; };
 		4EC915912440394E004F6B2A /* ModelIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ModelIO.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS13.2.sdk/System/Library/Frameworks/ModelIO.framework; sourceTree = DEVELOPER_DIR; };
+		4EE7DAD4261ED90F00BF6A62 /* crate.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = crate.jpg; sourceTree = SOURCE_ROOT; };
 		51564714205B0E0B006AF627 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		51564716205B0E11006AF627 /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
 		51C2956020A81D3300F951BE /* Scene.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Scene.h; sourceTree = "<group>"; };
@@ -114,9 +114,9 @@
 		51E97F682016FC6600D09D13 /* MPSPathTracingSample */ = {
 			isa = PBXGroup;
 			children = (
+				4EE7DAD4261ED90F00BF6A62 /* crate.jpg */,
 				4E289C542439C06E00069BF8 /* mario.obj */,
 				4E289C552439C06E00069BF8 /* mario.png */,
-				4E87EF602439BBE80029CED2 /* crate.jpg */,
 				51F7FFDB209BC3520017E288 /* Renderer.h */,
 				51F7FFE0209BC3520017E288 /* Renderer.mm */,
 				51C2956020A81D3300F951BE /* Scene.h */,
@@ -273,7 +273,7 @@
 				51F70013209BCA010017E288 /* LaunchScreen.storyboard in Resources */,
 				4E289C562439C06E00069BF8 /* mario.obj in Resources */,
 				51F70012209BCA010017E288 /* Main.storyboard in Resources */,
-				4E87EF612439BBE80029CED2 /* crate.jpg in Resources */,
+				4EE7DAD5261ED90F00BF6A62 /* crate.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,9 +282,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				4E289C5C2439C94000069BF8 /* mario.png in Resources */,
+				4EE7DAD8261ED97000BF6A62 /* crate.jpg in Resources */,
 				4E289C5B2439C93C00069BF8 /* mario.obj in Resources */,
 				51F7001A209BCA180017E288 /* Main.storyboard in Resources */,
-				4E87EF622439BBE80029CED2 /* crate.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

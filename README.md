@@ -2,7 +2,7 @@
 
 Use the Metal Performance Shaders ray intersector to perform ray-traced rendering.
 
-***Note: This repo is based on Apple's [Metal for Accelerating Ray Tracing](https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing) example available at the Developer portal. The features like reflection, OBJ Import and texture mapping are added on top of the original codebase.***
+***Note: This repo is based on Apple's [Metal for Accelerating Ray Tracing](https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing) example available at the Developer portal. The features like reflection, refraction, OBJ Import and texture mapping are added on top of the original codebase.***
 
 ## Final Output
 ![Ray tracing on Metal devices with OBJ file import with texture mapping and reflection.](Documentation/final.png)
@@ -251,5 +251,31 @@ if (reflectionIndex > 0.0f) {
     ray.mask = RAY_MASK_SECONDARY;
 } else {
 ```
+
+## Refraction for transparent surface
+
+![Image shows fully reflective spheres](Documentation/final.png)
+
+If the surface has transparency value and refraction index, the ray is refract through the surface by calculating the normal using refract function. 
+
+```
+float refractionIndexValue = interpolateVertexAttribute(refractionIndex, intersection);
+bool inside = false;
+if (dot(ray.direction, surfaceNormal) > 0) {
+    inside = true;
+    surfaceNormal = -surfaceNormal;
+}
+float eta = (inside) ? refractionIndexValue : 1.0f / refractionIndexValue;
+float3 rayDirection = refract(ray.direction.xyz, surfaceNormal, eta);
+
+ray.origin = intersectionPoint + rayDirection * 1e-3f;
+ray.direction = rayDirection;
+ray.color = color * refractionValue;
+ray.mask = RAY_MASK_PRIMARY;
+ray.maxDistance = INFINITY;
+shadowRay.maxDistance = -1.0f;
+
+```
+
 
 
